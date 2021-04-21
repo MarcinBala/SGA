@@ -1,0 +1,10 @@
+parametry narzucone:
+
+a = 4, b = 7, c = 2, ilość wyników = 40
+
+parametry pozostałe:
+
+liczba populacji = 15
+ile osobników = 10
+prawdopodobieństwo krzyżowania = 0.8
+prawdopodobieństwo mutacji = 0.01
