@@ -1,0 +1,238 @@
+ <!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+textarea {
+   height: 80vh;
+}
+button {
+   display: block;
+   margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<div id="results"></div>
+<div id="srednia"></div>
+<div id="odchylenie"></div>
+
+<fieldset>
+  <legend>Prosty algorytm genetyczny - Wyniki</legend>
+  <textarea></textarea>
+  <button id="btnSave">Zapisz do pliku tekstowego</button>
+</fieldset>
+
+<script>
+//<----------------------------- ROZWIĄZANIE --------------------------------->
+const a = 4, b = 7, c= 2;
+const ile_wyn = 40;
+const lb_pop = 15;
+const ile_os = 10;
+// lb_pop * ile_os <= 150
+const pr_krzyz = 0.8;
+const pr_mut = 0.01;
+
+var osobniki = [];
+var wyniki = [];
+document.querySelector('textarea').value = "";
+
+for (let l=0; l < ile_wyn; l++){
+
+//losowanie osobników
+for(let i=0; i < ile_os; i++){
+    osobniki.push(Math.floor(Math.random() * 256));
+}
+
+for(let k=0; k < lb_pop - 1; k++){
+
+//losowanie par
+//pary to kolejne dwójki wylosowanych indeksów
+var pary = [];
+for(let i=0; i < ile_os; i++){
+    do{
+	    var rand_pary = Math.floor(Math.random() * ile_os);
+	} while(pary.includes(rand_pary))
+	pary[i] = rand_pary;
+}
+
+//określenie ilości par
+if(pary.length%2 == 1){
+    var ile_par = (pary.length-1)/2;
+}
+else{
+    var ile_par = (pary.length)/2;
+}
+
+//krzyżowanie
+for(let i=0; i < ile_par; i++){
+    let rand_krzyz = Math.random();
+	if(rand_krzyz > pr_krzyz){
+	    //nie krzyżują
+	}
+	else{
+	    let pc = 1 + Math.floor(Math.random() * 7);
+		let os_1 = numToArr(osobniki[pary[i*2]]);
+		let os_2 = numToArr(osobniki[pary[i*2+1]]);
+		
+		for(let j=pc; j <= 7; j++){
+		    let temp = os_1[j];
+			os_1[j] = os_2[j];
+			os_2[j] = temp;
+		}
+		
+		osobniki[pary[i*2]] = arrToNum(os_1);
+		osobniki[pary[i*2+1]] = arrToNum(os_2);
+	}
+}
+
+//mutacja
+for(let i=0; i < ile_os; i++){
+    let osobnik = numToArr(osobniki[i]);
+	
+	for(let j=0; j < osobnik.length; j++){
+	    let rand_mut = Math.random();
+		if(pr_mut >= rand_mut){	
+		    if(osobnik[j] == "0")
+			    osobnik[j] ="1";
+			else
+			    osobnik[j] = "0";
+		}
+	}
+
+	osobniki[i] = arrToNum(osobnik);
+}
+
+//selekcja
+var f_suma = 0;
+let nowa_pop = [];
+for(let i=0; i < ile_os; i++){
+    f_suma += f(osobniki[i]);
+}
+var odcinki = [0];
+for(let i=0; i < ile_os; i++){
+    let koniec = odcinki[i] + f(osobniki[i])/f_suma;
+	odcinki[i+1] = koniec;
+}
+for(let i=0; i < ile_os; i++){
+    let rand_sel = Math.random();
+	for(j=0 ; j < odcinki.length-1 ; j++){
+	    if(rand_sel >= odcinki[j] && rand_sel < odcinki[j+1]){
+		    nowa_pop.push(osobniki[j]);
+			break;
+		}
+	}
+}
+osobniki = nowa_pop;
+
+}
+
+//znalezienie najlepszego osobnika
+var max = osobniki[0];
+for(let i=0; i < ile_os - 1; i++){
+    if(f(osobniki[i]) < f(osobniki[i+1])){
+	    max = osobniki[i+1];
+	}
+}
+
+//<---------------------------- WYNIKI --------------------------------->
+
+wyniki[l] = max;
+
+//document.getElementById("results").innerHTML += f(wyniki[l]) + " " + wyniki[l] + "<br>";
+document.querySelector('textarea').value += f(wyniki[l]) + " " + wyniki[l];
+if(l != ile_wyn - 1){
+document.querySelector('textarea').value += "\n";
+}
+
+}
+
+//średnia wszystkich wyników
+var avg = srednia(wyniki);
+//document.getElementById("srednia").innerHTML = "Średnia: " + avg;
+
+//odchylenie standardowe
+var odch = odchylenie(wyniki);
+//document.getElementById("odchylenie").innerHTML = "Odchylenie: " + odch;
+
+//<-------------------------- FUNKCJE ------------------------------->
+
+function f(x){
+    return a*x*x + b*x + c;
+}
+
+//zamiania liczby na tablicę
+function numToArr(x){
+    if(x > 255 || x < 0){
+	    console.log("Błąd. Niepoprawna wartość dla osobnika");
+		return;
+	}
+	
+    let bin = x.toString(2);
+	let binArr = [];
+	
+	//uzupełnienie 'pustych' miejsc zerami
+	for(let i=0; i < 8 - bin.length; i++){
+	     binArr.push("0");
+	}
+	
+	for(let i=0; i < bin.length; i++){
+	    binArr.push(bin[i]);
+	}
+	
+	return binArr;
+}
+
+//zamiana tablicy na liczbę
+function arrToNum(arr){
+    let temp = 0;
+    for(let i=0; i < arr.length; i++){
+	    temp += arr[arr.length-1-i] * Math.pow(2, i);
+	}
+	return temp;
+}
+
+function srednia(arr){
+    let avg = 0;
+	for(let i=0; i < arr.length; i++){
+	    avg += arr[i];
+	}
+	avg = avg/arr.length;
+	return avg;
+}
+
+function odchylenie(arr){
+    let ans = 0;
+	let avg = srednia(arr);
+	
+	for (let i=0; i < arr.length; i++){
+	    ans += Math.pow(arr[i] - avg, 2); 
+	}
+	
+	ans = ans/arr.length;
+	ans = Math.pow(ans, 0.5);
+	return ans;
+}
+
+//<-------------------------- PLIK TEKSTOWY ------------------------------->
+const downloadToFile = (content, filename, contentType) => {
+  const a = document.createElement('a');
+  const file = new Blob([content], {type: contentType});
+  
+  a.href= URL.createObjectURL(file);
+  a.download = filename;
+  a.click();
+
+	URL.revokeObjectURL(a.href);
+};
+
+document.querySelector('#btnSave').addEventListener('click', () => {
+  const textArea = document.querySelector('textarea');
+  
+  downloadToFile(textArea.value, 'wyniki-sga.txt', 'text/plain');
+});
+</script>
+
+</body>
+</html> 
